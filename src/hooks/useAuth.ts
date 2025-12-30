@@ -22,10 +22,40 @@ export function useAuth() {
     }
   };
 
+  // Function to fetch fresh user data from server
+  const refreshUser = async () => {
+    const userStr = localStorage.getItem("currentUser");
+    if (!userStr) return;
+
+    try {
+      const currentUser = JSON.parse(userStr);
+      const response = await fetch(`/api/users/${currentUser._id || currentUser.id}`, {
+        headers: {
+          "x-user-id": currentUser._id || currentUser.id || "",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          localStorage.setItem("currentUser", JSON.stringify(data.user));
+          setUser(data.user);
+          window.dispatchEvent(new Event("authChange"));
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
+
   useEffect(() => {
     // Initial check
     checkUser();
-    setLoading(false);
+    
+    // Refresh user data from server on mount to get latest data
+    refreshUser().finally(() => {
+      setLoading(false);
+    });
 
     // Listen for storage changes (when other tabs/windows update localStorage)
     const handleStorageChange = (e: StorageEvent) => {
@@ -56,5 +86,5 @@ export function useAuth() {
     window.location.href = "/";
   };
 
-  return { user, loading, logout };
+  return { user, loading, logout, refreshUser };
 }

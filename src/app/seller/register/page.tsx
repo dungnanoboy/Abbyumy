@@ -40,10 +40,17 @@ export default function SellerRegisterPage() {
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
+      return;
     }
-    // Check if user already has active shop
-    if (user?.shop?.isActive) {
+    // If user is already a seller with active shop, redirect to dashboard
+    if (user?.role === "seller" && user?.shop?.isActive) {
       router.push("/seller");
+      return;
+    }
+    // If user is seller but shop not active, redirect to pending
+    if (user?.role === "seller" && !user?.shop?.isActive) {
+      router.push("/seller/pending");
+      return;
     }
   }, [user, loading, router]);
 

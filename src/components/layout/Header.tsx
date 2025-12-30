@@ -168,8 +168,9 @@ export default function Header() {
                         </Link>
                       )}
 
-                      {/* Abbyumy Shop Seller - Show for seller with active shop OR show register link if not seller yet */}
+                      {/* Abbyumy Shop Seller - Smart routing based on seller status */}
                       {user.role === 'seller' && user.shop?.isActive ? (
+                        // Seller with active shop -> Go to dashboard
                         <Link
                           href="/seller"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 transition-colors border-b border-gray-100"
@@ -180,7 +181,20 @@ export default function Header() {
                           </svg>
                           <span className="font-semibold">Abbyumy Shop Seller</span>
                         </Link>
+                      ) : user.role === 'seller' && !user.shop?.isActive ? (
+                        // Seller but shop not active -> Go to pending page
+                        <Link
+                          href="/seller/pending"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-yellow-700 hover:bg-yellow-50 transition-colors border-b border-gray-100"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-semibold">Đơn đăng ký (Chờ duyệt)</span>
+                        </Link>
                       ) : (
+                        // Not a seller -> Go to register page
                         <Link
                           href="/seller/register"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 transition-colors border-b border-gray-100"
@@ -189,7 +203,21 @@ export default function Header() {
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                           </svg>
-                          <span className="font-semibold">Abbyumy Shop Seller</span>
+                          <span className="font-semibold">Đăng ký bán hàng</span>
+                        </Link>
+                      )}
+
+                      {/* Affiliate Center - Show for users with affiliate role */}
+                      {user.role?.includes('affiliate') && (
+                        <Link
+                          href="/affiliate"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-teal-700 hover:bg-teal-50 transition-colors border-b border-gray-100"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span className="font-semibold">Trung tâm liên kết</span>
                         </Link>
                       )}
 
