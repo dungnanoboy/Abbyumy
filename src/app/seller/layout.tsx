@@ -4,12 +4,60 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { authFetch } from "@/lib/authFetch";
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
+
+  // Check if user has affiliate role
+  const hasAffiliateRole = user?.role?.split(',').map(r => r.trim()).includes('affiliate');
+
+  // Handle affiliate center access
+  const handleAffiliateCenterClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    console.log('User data:', user);
+    console.log('Has affiliate role:', hasAffiliateRole);
+    
+    if (hasAffiliateRole) {
+      // Already has affiliate role, just navigate
+      router.push('/affiliate');
+      return;
+    }
+
+    // Need to add affiliate role first
+    setIsAddingAffiliate(true);
+    try {
+      console.log('Calling add-affiliate-role API...');
+      const response = await authFetch('/api/users/add-affiliate-role', {
+        method: 'POST',
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        // Update localStorage
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('authChange'));
+        
+        // Navigate to affiliate center
+        router.push('/affiliate');
+      } else {
+        alert('Có lỗi xảy ra: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error adding affiliate role:', error);
+      alert('Có lỗi xảy ra khi đăng ký affiliate');
+    } finally {
+      setIsAddingAffiliate(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -22,14 +70,17 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       return;
     }
 
+    const roles = user?.role?.split(',').map(r => r.trim()) || [];
+    const hasSellerRole = roles.includes('seller');
+
     // If user is not seller and not on register page, redirect to home
-    if (!loading && user && user.role !== "seller") {
+    if (!loading && user && !hasSellerRole) {
       router.push("/");
       return;
     }
 
     // If seller but shop not active, redirect to pending page
-    if (!loading && user && user.role === "seller" && !user.shop?.isActive) {
+    if (!loading && user && hasSellerRole && !user.shop?.isActive) {
       if (!pathname?.includes("/pending")) {
         router.push("/seller/pending");
       }
@@ -49,8 +100,11 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     return <>{children}</>;
   }
 
+  const roles = user?.role?.split(',').map(r => r.trim()) || [];
+  const hasSellerRole = roles.includes('seller');
+
   // For dashboard pages, require seller role
-  if (!user || user.role !== "seller") {
+  if (!user || !hasSellerRole) {
     return null;
   }
 
@@ -241,6 +295,48 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
+              
+              // Special handling for Affiliate/Link menu item
+              if (item.href === "/seller/affiliates") {
+                return (
+                  <li key={item.href}>
+                    <button
+                      onClick={handleAffiliateCenterClick}
+                      disabled={isAddingAffiliate}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        isAddingAffiliate
+                          ? "bg-gray-100 text-gray-400 cursor-wait"
+                          : "text-gray-700 hover:bg-teal-50 hover:text-teal-600"
+                      }`}
+                    >
+                      {item.icon}
+                      <span className="text-sm">
+                        {isAddingAffiliate
+                          ? "Đang xử lý..."
+                          : hasAffiliateRole
+                          ? "Trung tâm liên kết"
+                          : "Đi đến trung tâm liên kết"}
+                      </span>
+                      {!hasAffiliateRole && !isAddingAffiliate && (
+                        <svg
+                          className="w-4 h-4 ml-auto"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </li>
+                );
+              }
+
               return (
                 <li key={item.href}>
                   <Link

@@ -56,6 +56,13 @@ export default function AffiliateLayout({
         return;
       }
 
+      // Only seller + affiliate can access full affiliate center
+      // Creator + affiliate should use studio for video management
+      if (roles.includes("creator") && !roles.includes("seller")) {
+        router.push("/studio/affiliate-videos");
+        return;
+      }
+
       setUser(userData);
       setIsLoading(false);
     };

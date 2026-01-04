@@ -154,8 +154,8 @@ export default function Header() {
                         Tin nhắn
                       </Link>
 
-                      {/* Creator Studio - Only show for creator/seller role */}
-                      {(user.role === 'creator' || user.role === 'seller') && (
+                      {/* Creator Studio - Only show for creator role */}
+                      {user.role?.split(',').map(r => r.trim()).includes('creator') && (
                         <Link
                           href="/studio"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-orange-700 hover:bg-orange-50 transition-colors border-y border-gray-100"
@@ -169,7 +169,7 @@ export default function Header() {
                       )}
 
                       {/* Abbyumy Shop Seller - Smart routing based on seller status */}
-                      {user.role === 'seller' && user.shop?.isActive ? (
+                      {user.role?.split(',').map(r => r.trim()).includes('seller') && user.shop?.isActive ? (
                         // Seller with active shop -> Go to dashboard
                         <Link
                           href="/seller"
@@ -181,7 +181,7 @@ export default function Header() {
                           </svg>
                           <span className="font-semibold">Abbyumy Shop Seller</span>
                         </Link>
-                      ) : user.role === 'seller' && !user.shop?.isActive ? (
+                      ) : user.role?.split(',').map(r => r.trim()).includes('seller') && !user.shop?.isActive ? (
                         // Seller but shop not active -> Go to pending page
                         <Link
                           href="/seller/pending"

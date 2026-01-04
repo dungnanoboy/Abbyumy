@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { authFetch } from "@/lib/authFetch";
 
 export default function StudioLayout({
   children,
@@ -14,9 +15,45 @@ export default function StudioLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isAddingAffiliate, setIsAddingAffiliate] = useState(false);
+
+  // Check if user has affiliate role
+  const hasAffiliateRole = user?.role?.split(',').map(r => r.trim()).includes('affiliate');
+
+  // Handle affiliate registration
+  const handleAffiliateRegister = async () => {
+    setIsAddingAffiliate(true);
+    try {
+      const response = await authFetch('/api/users/add-affiliate-role', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update localStorage
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('authChange'));
+        
+        // Reload page to show updated menu
+        window.location.reload();
+      } else {
+        alert('Có lỗi xảy ra: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error adding affiliate role:', error);
+      alert('Có lỗi xảy ra khi đăng ký affiliate');
+    } finally {
+      setIsAddingAffiliate(false);
+    }
+  };
 
   useEffect(() => {
-    if (!loading && (!user || (user.role !== "creator" && user.role !== "seller"))) {
+    const roles = user?.role?.split(',').map(r => r.trim()) || [];
+    const hasCreatorRole = roles.includes('creator');
+    const hasSellerRole = roles.includes('seller');
+    
+    if (!loading && (!user || (!hasCreatorRole && !hasSellerRole))) {
       router.push("/");
     }
   }, [user, loading, router]);
@@ -32,7 +69,11 @@ export default function StudioLayout({
     );
   }
 
-  if (!user || (user.role !== "creator" && user.role !== "seller")) {
+  const roles = user?.role?.split(',').map(r => r.trim()) || [];
+  const hasCreatorRole = roles.includes('creator');
+  const hasSellerRole = roles.includes('seller');
+
+  if (!user || (!hasCreatorRole && !hasSellerRole)) {
     return null;
   }
 
@@ -110,6 +151,57 @@ export default function StudioLayout({
                 </Link>
               );
             })}
+
+            {/* Affiliate Section */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              {hasAffiliateRole ? (
+                // Show Video Management for creator + affiliate
+                <Link
+                  href="/studio/affiliate-videos"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    pathname === "/studio/affiliate-videos"
+                      ? "bg-teal-50 text-teal-600 font-medium"
+                      : "text-gray-700 hover:bg-teal-50"
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                  </svg>
+                  <span>Video quản lý liên kết</span>
+                </Link>
+              ) : (
+                // Show Register Affiliate button
+                <button
+                  onClick={handleAffiliateRegister}
+                  disabled={isAddingAffiliate}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isAddingAffiliate
+                      ? "bg-gray-100 text-gray-400 cursor-wait"
+                      : "text-teal-700 bg-teal-50 hover:bg-teal-100"
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>{isAddingAffiliate ? "Đang xử lý..." : "Đăng ký làm Affiliate"}</span>
+                  {!isAddingAffiliate && (
+                    <svg
+                      className="w-4 h-4 ml-auto"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </nav>
 

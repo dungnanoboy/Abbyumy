@@ -7,8 +7,12 @@ export function getAuthHeaders(): HeadersInit {
   
   try {
     const user = JSON.parse(userStr);
+    // Try to get ID in order of preference: _id, id
+    const userId = user._id || user.id;
+    if (!userId) return {};
+    
     return {
-      'x-user-id': user.id || user._id,
+      'x-user-id': userId.toString(),
     };
   } catch {
     return {};
